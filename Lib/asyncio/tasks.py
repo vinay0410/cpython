@@ -692,8 +692,8 @@ class _GatheringFuture(futures.Future):
         self._children = children
         self._cancel_requested = False
 
-    def cancel(self):
-        if self.done():
+    def cancel(self, force_children=False):
+        if self.done() and not force_children:
             return False
         ret = False
         for child in self._children:
