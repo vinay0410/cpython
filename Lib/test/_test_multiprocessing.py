@@ -4993,7 +4993,9 @@ class TestResourceTracker(unittest.TestCase):
 
             time.sleep(10)
         '''
+        print('************************************************************************************************************************')
         for rtype in resource_tracker._CLEANUP_FUNCS:
+            print(rtype)
             with self.subTest(rtype=rtype):
                 if rtype == "noop":
                     # Artefact resource type used by the resource_tracker
@@ -5019,19 +5021,27 @@ class TestResourceTracker(unittest.TestCase):
                     except OSError as e:
                         # docs say it should be ENOENT, but OSX seems to give
                         # EINVAL
+                        print('Unlinked')
+                        print(e)
                         self.assertIn(e.errno, (errno.ENOENT, errno.EINVAL))
                         break
                 else:
+                    print('Resource not unlinked')
                     raise AssertionError(
                         f"A {rtype} resource was leaked after a process was "
                         f"abruptly terminated.")
+
+                print('here^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^')
                 err = p.stderr.read().decode('utf-8')
                 p.stderr.close()
                 expected = ('resource_tracker: There appear to be 2 leaked {} '
                             'objects'.format(
                             rtype))
+                print(err)
                 self.assertRegex(err, expected)
                 self.assertRegex(err, r'resource_tracker: %r: \[Errno' % name1)
+
+        print('after for loop')
 
     def check_resource_tracker_death(self, signum, should_die):
         # bpo-31310: if the semaphore tracker process has died, it should
