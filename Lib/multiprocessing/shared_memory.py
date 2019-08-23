@@ -14,6 +14,7 @@ import os
 import errno
 import struct
 import secrets
+import fcntl
 
 if os.name == "nt":
     import _winapi
@@ -113,6 +114,7 @@ class SharedMemory:
                 self.unlink()
                 raise
 
+            fcntl.flock(self._fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
             from .resource_tracker import register
             register(self._name, "shared_memory")
 

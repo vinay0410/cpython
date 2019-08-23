@@ -19,6 +19,8 @@ import os
 import signal
 import sys
 import threading
+import fcntl
+import errno
 import warnings
 
 from . import spawn
@@ -33,6 +35,8 @@ _CLEANUP_FUNCS = {
     'noop': lambda: None,
 }
 
+_FILE_PREFIXES = {}
+
 if os.name == 'posix':
     import _multiprocessing
     import _posixshmem
@@ -42,6 +46,9 @@ if os.name == 'posix':
         'shared_memory': _posixshmem.shm_unlink,
     })
 
+    _FILE_PREFIXES.update({
+        'shared_memory': '/dev/shm'
+    })
 
 class ResourceTracker(object):
 
@@ -158,17 +165,20 @@ getfd = _resource_tracker.getfd
 def main(fd):
     '''Run resource tracker.'''
     # protect the process from ^C and "killall python" etc
+    print('PID')
+    print(os.getpid())
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     signal.signal(signal.SIGTERM, signal.SIG_IGN)
     if _HAVE_SIGMASK:
         signal.pthread_sigmask(signal.SIG_UNBLOCK, _IGNORED_SIGNALS)
 
+    '''
     for f in (sys.stdin, sys.stdout):
         try:
             f.close()
         except Exception:
             pass
-
+    '''
     cache = {rtype: set() for rtype in _CLEANUP_FUNCS.keys()}
     try:
         # keep track of registered/unregistered resources
@@ -209,6 +219,16 @@ def main(fd):
                 # For some reason the process which created and registered this
                 # resource has failed to unregister it. Presumably it has
                 # died.  We therefore unlink it.
+                if rtype in _FILE_PREFIXES:
+                    try:
+                        fd = open(_FILE_PREFIXES[rtype] + name)
+                        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    except FileNotFoundError:
+                        continue
+                    except IOError as e:
+                        if e.errno == errno.EAGAIN: # Continue if a shared flock is present
+                            print("Skipping shouldn't be unlinked")
+                            continue
                 try:
                     try:
                         _CLEANUP_FUNCS[rtype](name)
