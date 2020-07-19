@@ -3815,6 +3815,14 @@ class _TestSharedMemory(BaseTestCase):
 
         sms.close()
 
+        # Test creating a shared memory segment with size 0
+        with self.assertRaises(ValueError):
+            sms_invalid = shared_memory.SharedMemory(create=True)
+
+        # Test creating shared memory segment with size greater than available
+        with self.assertRaises(OSError):
+            sms_invalid = shared_memory.SharedMemory(create=True, size=sys.maxsize)
+
     def test_shared_memory_across_processes(self):
         sms = shared_memory.SharedMemory('test02_tsmap', True, size=512)
         self.addCleanup(sms.unlink)

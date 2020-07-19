@@ -73,6 +73,8 @@ class SharedMemory:
     def __init__(self, name=None, create=False, size=0):
         if not size >= 0:
             raise ValueError("'size' must be a positive integer")
+        if create and size == 0:
+            raise ValueError("'size' of new segment cannot be 0")
         if create:
             self._flags = _O_CREX | os.O_RDWR
         if name is None and not self._flags & os.O_EXCL:
