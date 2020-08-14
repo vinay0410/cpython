@@ -64,6 +64,9 @@ copying of data.
    memory block may be larger or equal to the size requested.  When attaching
    to an existing shared memory block, the ``size`` parameter is ignored.
 
+   .. note::
+      Maximum size limit is 1TB
+
    .. method:: close()
 
       Closes access to the shared memory from this instance.  In order to
